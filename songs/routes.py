@@ -60,19 +60,25 @@ def create_song(user):
     data = request.form
     
     file_id = services.save_file(request.files.get('file'))
+    
+    try:
+        song = services.create_song(
+            title=data['title'],
+            artist=data['artist'],
+            album=data['album'],
+            release_date=data['release_date'],
+            file_id=file_id,
+            user_id=user.id
+        )
 
-    song = services.create_song(
-        title=data['title'],
-        artist=data['artist'],
-        album=data['album'],
-        release_date=data['release_date'],
-        file_id=file_id,
-        user_id=user.id
-    )
+        response = SongSerializer.serialize(song)
 
-    response = SongSerializer.serialize(song)
-
-    return make_response(jsonify(response), 201)    
+        return make_response(jsonify(response), 201)   
+    
+    except:
+        return make_response(jsonify({
+            'message': 'All fields are required.'
+        }), 400)   
 
 
 @songs_bp.route('/<int:id>', methods=['PUT'])
@@ -102,7 +108,10 @@ def update_song(user, id):
         return make_response(jsonify(response), 200)
     
     except AuthException as e:
-        return make_response(jsonify({'error': e.message}), 401)
+        return make_response(jsonify({'message': e.message}), 401)
+    
+    except:
+        return make_response(jsonify({'message': 'All fields are requried.'}), 400)
 
 
 @songs_bp.route('/<int:id>', methods=['DELETE'])
@@ -112,7 +121,7 @@ def delete_song(user, id):
         services.delete_song(id, user.id)
         return make_response(jsonify({'message': 'Song deleted successfully'}), 200)
     except AuthException as e:
-        return make_response(jsonify({'error': e.message}), 401)
+        return make_response(jsonify({'message': e.message}), 401)
 
 
 @songs_bp.route('/<int:id>/file')

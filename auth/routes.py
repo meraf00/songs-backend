@@ -24,7 +24,7 @@ def login():
 
         return make_response(jsonify({'token': token}), 200)
     
-    return make_response(jsonify({'error': 'Invalid credentials'}), 400)
+    return make_response(jsonify({'message': 'Invalid credentials'}), 401)
     
 
 @auth_bp.route('/signup', methods=['POST'])
@@ -33,7 +33,7 @@ def signup():
     password = request.json.get('password')
 
     if not email or not password:
-        return make_response(jsonify({'error': 'Email and password are required'}), 400)
+        return make_response(jsonify({'message': 'Email and password are required'}), 400)
 
     user = services.create_user(email, password)
     token = services.generate_auth_token(user)

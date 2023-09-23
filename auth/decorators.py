@@ -13,7 +13,10 @@ def login_required(func):
             return make_response(jsonify({'message': 'Unauthorized'}), 401)
         
         try:
-            user = services.verify_token(token)
+            user = services.verify_token(token)            
+            if not user:
+                return make_response(jsonify({'message': 'Unauthorized'}), 401)
+            
         except:
             return make_response(jsonify({'message': 'Unauthorized'}), 401)
         
