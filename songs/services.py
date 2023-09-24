@@ -16,10 +16,8 @@ def get_songs_by_id(id):
 
     return song
 
-def get_songs_by_uploader(user_id, page=1, per_page=10):
-    page = Song.query.filter_by(user_id=user_id).paginate(page=page, per_page=per_page)
-
-    return page.items
+def get_songs_by_uploader(user_id):
+    return Song.query.filter_by(user_id=user_id)    
 
 def query_song(queryString, page=1, per_page=10):
     results = Song.query.filter(
@@ -29,7 +27,7 @@ def query_song(queryString, page=1, per_page=10):
         Song.release_date.like(f'%{queryString}%')
     ).paginate(page=page, per_page=per_page)    
 
-    return results.items
+    return results
 
 def create_song(title, artist, album, release_date, file_id, user_id):
     song = Song(
@@ -70,7 +68,8 @@ def delete_song(id, user_id):
     if song.user.id != user_id:
         raise AuthException('You are not authorized to update this song')
     
-    os.remove(song.file.path)    
+    path = os.path.join(os.getenv('UPLOAD_FOLDER'), song.file.name)    
+    os.remove(path)   
 
     db.session.delete(song)
     db.session.commit()

@@ -35,7 +35,11 @@ def signup():
     if not email or not password:
         return make_response(jsonify({'message': 'Email and password are required'}), 400)
 
-    user = services.create_user(email, password)
-    token = services.generate_auth_token(user)
+    try:
+        user = services.create_user(email, password)
+        token = services.generate_auth_token(user)
 
-    return make_response(jsonify({'token': token}), 200)
+        return make_response(jsonify({'token': token}), 200)
+    except:
+        return make_response(jsonify({'message': 'User already exists.'}), 409)
+

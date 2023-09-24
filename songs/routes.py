@@ -10,14 +10,21 @@ songs_bp = Blueprint('songs', __name__)
 
 @songs_bp.route('/')
 def get_all_songs():
+    queryString = request.args.get('q', '')    
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
 
-    songs = services.get_all_songs(page=page, per_page=limit)
+    results = services.query_song(queryString, page=page, per_page=limit)
+    print(results.__dict__)
     
-    response = SongSerializer.serialize_list(songs)
+    response = SongSerializer.serialize_list(results.items)
 
-    return make_response(jsonify({'results': response}), 200)
+    return make_response(jsonify({
+        'hasNext': page * results.per_page < results.total,
+        'hasPrev': page > 1,
+        'page': page,
+        'limit': limit,
+        'results': response}), 200)  
 
 
 @songs_bp.route('/<int:id>')
@@ -30,28 +37,12 @@ def get_song_by_id(id):
 
 @songs_bp.route('/uploads')
 @login_required
-def get_song_by_user(user):    
-    page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', 10, type=int)
-
-    songs = services.get_songs_by_uploader(user.id, page=page, per_page=limit)
+def get_song_by_user(user):        
+    songs = services.get_songs_by_uploader(user.id)
     
     response = SongSerializer.serialize_list(songs)
 
-    return make_response(jsonify({'results': response}), 200)
-
-
-@songs_bp.route('/search')
-def search_song():
-    queryString = request.args.get('q')    
-    page = request.args.get('page', 1, type=int)
-    limit = request.args.get('limit', 10, type=int)
-
-    results = services.query_song(queryString, page=page, per_page=limit)
-    
-    response = SongSerializer.serialize_list(results)
-
-    return make_response(jsonify({'results': response}), 200)    
+    return make_response(jsonify({'results': response}), 200)  
         
 
 @songs_bp.route('/', methods=['POST'])
@@ -86,11 +77,11 @@ def create_song(user):
 def update_song(user, id):
     data = request.form
 
+    file_id = None
     if 'file' in request.files:
-        file_id = services.save_file(request.files['file'])
-    
-    else:
-        file_id = None
+        if request.files['file']:
+            file_id = services.save_file(request.files['file'])            
+        
 
     try:
         song = services.update_song(
@@ -118,8 +109,9 @@ def update_song(user, id):
 @login_required
 def delete_song(user, id):
     try:
-        services.delete_song(id, user.id)
-        return make_response(jsonify({'message': 'Song deleted successfully'}), 200)
+        song = services.delete_song(id, user.id)
+        response = SongSerializer.serialize(song)
+        return make_response(jsonify(response), 200)
     except AuthException as e:
         return make_response(jsonify({'message': e.message}), 401)
 
